@@ -1,38 +1,79 @@
-<?php
+<?php 
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome', [
-    'greeting' => 'Hello, World!',
-    'name' => 'John Doe',
-    'age' => 30,
-    'tasks' => [
-        'Learn Laravel',
-        'Build a project',
-        'Deploy to production',
-    ],
-]);
+Route::get('/', function () {
+    return view('welcome');
+});
 
-Route::view('/about', 'about');
-Route::view('/contact', 'contact');
+Route::get('/about', function () {
+    return view('about');
+});
 
-Route::get('/formtest', function(){
-    $emails = session()->get('$emails', []);
+Route::get('/contact', function () {
+    return view('contact');
+});
+Route::get('/services', function(){
+    return view('services');
+});
+Route::get('/showcases', function(){
+    return view('showcases');
+});
+Route::get('/blog', function(){
+    return view('blog');
+});
 
-    return view('formtest',[
+
+Route::get('/formtest', function () {
+    $emails = session()->get('emails', []);
+
+    return view('formtest', [
         'emails' => $emails,
     ]);
 });
 
-Route::post('/formtest', function(){
-    $email = request('email');
+Route::post('/formtest', function () {
 
-    session()->push('$emails', $email);
+    request()->validate([
+        'email' => ['required', 'email'],
+    ]);
+
+    $newEmail = request('email');
+    $emails = session()->get('emails', []);
+
+    if(count($emails) >= 5)
+        return redirect('/formtest')-> with ('error', 'Maximum of 5 emails only');
+
+    if (in_array($newEmail, $emails)) {
+        return redirect('/formtest')->with('error', 'Email already exists!');
+    }
+
+    $emails[] = $newEmail;
+    session()->put('emails', $emails);
+
+    return redirect('/formtest') ->with('success', 'Email added successfully!');
+});
+
+Route::delete('/delete-email/{index}', function ($index) {
+
+    $emails = session()->get('emails', []);
+
+    unset($emails[$index]);
+
+    session()->put('emails', array_values($emails));
 
     return redirect('/formtest');
 });
 
-Route::get('/delete-emails', function(){
-    session()->forget('$emails');
+Route::delete('/delete-email/{index}', function ($index) {
+
+    $emails = session()->get('emails', []);
+
+    unset($emails[$index]);
+
+    $emails = array_values($emails);
+
+    session()->put('emails', $emails);
+
     return redirect('/formtest');
 });
